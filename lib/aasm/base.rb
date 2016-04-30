@@ -12,6 +12,9 @@ module AASM
       # @state_machine.config.column = options[:column].to_sym if options[:column] # master
       @options = options
 
+      # fabio > move default configurations to the Configuration#new
+      # fabio > then use @options to override configurations
+
       # let's cry if the transition is invalid
       configure :whiny_transitions, true
 
@@ -54,6 +57,7 @@ module AASM
       end
     end
 
+    # fabio > use separate getter and setter methods...
     # This method is both a getter and a setter
     def attribute_name(column_name=nil)
       if column_name
@@ -80,21 +84,20 @@ module AASM
     # [0] state
     # [1..] state
     def state(*args)
-      names, options = interpret_state_args(args)
-      names.each do |name|
-        @state_machine.add_state(name, klass, options)
+      states, options = interpret_state_args(args)
+      states.each do |state|
+        @state_machine.add_state(state, klass, options)
 
         aasm_name = @name.to_sym
-        state = name.to_sym
 
-        method_name = namespace? ? "#{namespace}_#{name}" : name
-        safely_define_method klass, "#{method_name}?", -> do
-          aasm(aasm_name).current_state == state
+        method_name = namespace? ? "#{namespace}_#{state}" : state
+        safely_define_method "#{method_name}?", -> do
+          aasm(aasm_name).current_state == state.to_sym
         end
 
-        const_name = namespace? ? "STATE_#{namespace.upcase}_#{name.upcase}" : "STATE_#{name.upcase}"
+        const_name = namespace? ? "STATE_#{namespace.upcase}_#{state.upcase}" : "STATE_#{state.upcase}"
         unless klass.const_defined?(const_name)
-          klass.const_set(const_name, name)
+          klass.const_set(const_name, state)
         end
       end
     end
@@ -109,16 +112,16 @@ module AASM
       # an addition over standard aasm so that, before firing an event, you can ask
       # may_event? and get back a boolean that tells you whether the guard method
       # on the transition will let this happen.
-      safely_define_method klass, "may_#{name}?", ->(*args) do
+      safely_define_method "may_#{name}?", ->(*args) do
         aasm(aasm_name).may_fire_event?(event, *args)
       end
 
-      safely_define_method klass, "#{name}!", ->(*args, &block) do
+      safely_define_method "#{name}!", ->(*args, &block) do
         aasm(aasm_name).current_event = :"#{name}!"
         aasm_fire_event(aasm_name, event, {:persist => true}, *args, &block)
       end
 
-      safely_define_method klass, name, ->(*args, &block) do
+      safely_define_method name, ->(*args, &block) do
         aasm(aasm_name).current_event = event
         aasm_fire_event(aasm_name, event, {:persist => false}, *args, &block)
       end
@@ -192,7 +195,7 @@ module AASM
       end
     end
 
-    def safely_define_method(klass, method_name, method_definition)
+    def safely_define_method(method_name, method_definition)
       if klass.instance_methods.include?(method_name.to_sym)
         warn "#{klass.name}: overriding method '#{method_name}'!"
       end

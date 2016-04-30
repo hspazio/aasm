@@ -1,0 +1,25 @@
+StateMachineStore
+  * stores: {
+      ClassX => {
+        :default => <StateMachine>,
+        :anotherone => <StateMachine>,
+      }, 
+      ClassY => {...}
+    } 
+
+StateMachineStore 1-*> {} 1-*> StateMachine
+
+Klass -> Base <-- StateMachine <-- Configuration
+
+in the model class including AASM...
+@aasm[machine_name] # => <Base>
+  all methods to add states/events etc.. are in Base
+
+Base
+- sets sets configs into StateMachine (maybe default configurations could be set into StateMachine?)
+
+
+
+New stuff
+* prepend all errors with AASM::
+

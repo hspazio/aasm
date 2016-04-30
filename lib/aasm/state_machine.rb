@@ -29,8 +29,8 @@ module AASM
       @states << AASM::Core::State.new(state_name, klass, self, options)
     end
 
-    def add_event(name, options, &block)
-      @events[name] = AASM::Core::Event.new(name, self, options, &block)
+    def add_event(event_name, options, &block)
+      @events[event_name] = AASM::Core::Event.new(event_name, self, options, &block)
     end
 
     def add_global_callbacks(name, *callbacks, &block)

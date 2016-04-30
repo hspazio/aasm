@@ -24,6 +24,7 @@ module AASM
 
     # this is the entry point for all state and event definitions
     def aasm(*args, &block)
+      # fabio > extract method: split_args(*args)
       if args[0].is_a?(Symbol) || args[0].is_a?(String)
         # using custom name
         state_machine_name = args[0].to_sym
@@ -34,6 +35,7 @@ module AASM
         options = args[0] || {}
       end
 
+      # fabio > maybe this module knows too much about StateMachineStore?
       AASM::StateMachineStore.fetch(self, true).register(state_machine_name, AASM::StateMachine.new(state_machine_name))
 
       # use a default despite the DSL configuration default.
@@ -43,9 +45,11 @@ module AASM
       raise ArgumentError, "The class #{aasm_klass} must inherit from AASM::Base!" unless aasm_klass.ancestors.include?(AASM::Base)
 
       @aasm ||= {}
+      # fabio > if state machine exists merge options otherwise create new one
       if @aasm[state_machine_name]
         # make sure to use provided options
         options.each do |key, value|
+          # fabio > add delegation to deal with config changes
           @aasm[state_machine_name].state_machine.config.send("#{key}=", value)
         end
       else
